@@ -1,0 +1,4 @@
+# Third-party sources the sensor payload builds from source, imported with
+# `vcs import src < src/isaacbot_amr_sensors/sensors_deps.repos`. Empty: the RS16 driver (rs_driver) is
+# vendored in isaacbot_amr_rs16_lidar/3rdparty, and the GNSS driver is in-tree.
+repositories: {}

@@ -1,0 +1,55 @@
+// Copyright 2026 Mechatronics Academy
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef ISAACBOT_AMR_RS16_LIDAR_INFRASTRUCTURE_ROS2_LASER_SCAN_PUBLISHER_HPP_
+#define ISAACBOT_AMR_RS16_LIDAR_INFRASTRUCTURE_ROS2_LASER_SCAN_PUBLISHER_HPP_
+
+#include <string>
+
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "rclcpp_lifecycle/lifecycle_publisher.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
+
+#include "isaacbot_amr_rs16_lidar/domain/laser_scan_frame.hpp"
+#include "isaacbot_amr_rs16_lidar/domain/ports/laser_scan_publisher_port.hpp"
+
+namespace isaacbot_amr_rs16_lidar::infrastructure
+{
+
+/** @brief Publishes the flattened scan as sensor_msgs/LaserScan in the sensor frame. */
+class Ros2LaserScanPublisher : public domain::LaserScanPublisherPort
+{
+public:
+    Ros2LaserScanPublisher(
+        rclcpp_lifecycle::LifecycleNode & node, const std::string & topic,
+        const std::string & frame_id, std::size_t queue_size);
+
+    void publish(const domain::LaserScanFrame & scan) override;
+
+    /** @brief Enables the publisher; call from the node's on_activate. */
+    void activate();
+
+    /** @brief Disables the publisher; call from the node's on_deactivate. */
+    void deactivate();
+
+private:
+    std::string frame_id_;
+    sensor_msgs::msg::LaserScan message_;
+    rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::LaserScan>::SharedPtr publisher_;
+};
+
+}  // namespace isaacbot_amr_rs16_lidar::infrastructure
+
+#endif  // ISAACBOT_AMR_RS16_LIDAR_INFRASTRUCTURE_ROS2_LASER_SCAN_PUBLISHER_HPP_

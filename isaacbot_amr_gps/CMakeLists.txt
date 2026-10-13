@@ -1,0 +1,143 @@
+cmake_minimum_required(VERSION 3.10)
+project(isaacbot_amr_gps)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS NO)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+set(PACKAGE_DEPENDENCIES
+    rclcpp
+    rclcpp_lifecycle
+    builtin_interfaces
+    diagnostic_msgs
+    diagnostic_updater
+    geometry_msgs
+    lifecycle_msgs
+    rcl_interfaces
+    sensor_msgs
+)
+
+find_package(ament_cmake REQUIRED)
+foreach(PACKAGE IN ITEMS ${PACKAGE_DEPENDENCIES})
+  find_package(${PACKAGE} REQUIRED)
+endforeach()
+
+# Domain + application: plain C++, no ROS dependencies.
+add_library(${PROJECT_NAME}_core STATIC
+            src/domain/gps_health_evaluator.cpp
+            src/domain/nmea/nmea_checksum.cpp
+            src/domain/nmea/nmea_sentence.cpp
+            src/domain/nmea/nmea_parser.cpp
+            src/domain/nmea/nmea_fix_assembler.cpp
+            src/application/monitor_gps_use_case.cpp
+            src/application/ingest_nmea_use_case.cpp
+)
+target_include_directories(${PROJECT_NAME}_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+# Infrastructure: ROS 2 adapters.
+add_library(${PROJECT_NAME}_ros STATIC
+            src/infrastructure/gps_msg_conversions.cpp
+            src/infrastructure/nmea_msg_conversions.cpp
+            src/infrastructure/ros2_gps_health_publisher.cpp
+            src/infrastructure/ros2_nmea_publisher.cpp
+            src/infrastructure/isaacbot_amr_gps_node.cpp
+            src/infrastructure/isaacbot_amr_gps_driver_node.cpp
+            src/infrastructure/udp_nmea_receiver.cpp
+)
+target_link_libraries(${PROJECT_NAME}_ros ${PROJECT_NAME}_core)
+target_link_libraries(${PROJECT_NAME}_ros
+    ${rclcpp_TARGETS}
+    ${rclcpp_lifecycle_TARGETS}
+    ${builtin_interfaces_TARGETS}
+    ${diagnostic_msgs_TARGETS}
+    ${diagnostic_updater_TARGETS}
+    ${geometry_msgs_TARGETS}
+    ${lifecycle_msgs_TARGETS}
+    ${rcl_interfaces_TARGETS}
+    ${sensor_msgs_TARGETS}
+)
+
+add_executable(${PROJECT_NAME}_node src/isaacbot_amr_gps.cpp)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_ros)
+
+# The NMEA-over-UDP GNSS driver, replacing nmea_navsat_driver/nmea_socket_driver.
+add_executable(${PROJECT_NAME}_driver_node src/isaacbot_amr_gps_driver.cpp)
+target_link_libraries(${PROJECT_NAME}_driver_node ${PROJECT_NAME}_ros)
+
+install(DIRECTORY include/ DESTINATION include)
+
+install(TARGETS ${PROJECT_NAME}_node ${PROJECT_NAME}_driver_node
+        DESTINATION lib/${PROJECT_NAME})
+
+install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
+install(FILES THIRD_PARTY_LICENSES DESTINATION share/${PROJECT_NAME})
+
+if(BUILD_TESTING)
+  # Standard ament style/lint gate (cpplint, cppcheck, lint_cmake, xmllint, copyright, ...), as
+  # in isaacbot_amr_ros/isaacbot_amr_hardware_interface. uncrustify is excluded for the same reason as there:
+  # this repo uses 4-space indentation, not ament_cmake_uncrustify's default style.
+  list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_uncrustify)
+  set(ament_cmake_flake8_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/flake8.ini)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+
+  # Domain and application must stay ROS-free (see .claude/rules/clean_architecture.md). Plain
+  # CTest add_test: pass/fail via exit code, no JUnit-XML contract to satisfy.
+  add_test(
+    NAME domain_purity_check
+    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_layer_purity.sh
+            ${CMAKE_CURRENT_SOURCE_DIR} domain
+  )
+  add_test(
+    NAME application_purity_check
+    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_layer_purity.sh
+            ${CMAKE_CURRENT_SOURCE_DIR} application
+  )
+
+  find_package(ament_cmake_gtest REQUIRED)
+
+  ament_add_gtest(test_gps_health_evaluator test/unit/test_gps_health_evaluator.cpp)
+  target_link_libraries(test_gps_health_evaluator ${PROJECT_NAME}_core)
+
+  ament_add_gtest(test_gps_use_cases test/unit/test_gps_use_cases.cpp)
+  target_link_libraries(test_gps_use_cases ${PROJECT_NAME}_core)
+
+  ament_add_gtest(test_gps_msg_conversions test/unit/test_gps_msg_conversions.cpp)
+  target_link_libraries(test_gps_msg_conversions ${PROJECT_NAME}_ros)
+
+  # NMEA driver: pure protocol and application logic.
+  ament_add_gtest(test_nmea_checksum test/unit/test_nmea_checksum.cpp)
+  target_link_libraries(test_nmea_checksum ${PROJECT_NAME}_core)
+
+  ament_add_gtest(test_nmea_parser test/unit/test_nmea_parser.cpp)
+  target_link_libraries(test_nmea_parser ${PROJECT_NAME}_core)
+
+  ament_add_gtest(test_nmea_fix_assembler test/unit/test_nmea_fix_assembler.cpp)
+  target_link_libraries(test_nmea_fix_assembler ${PROJECT_NAME}_core)
+
+  ament_add_gtest(test_ingest_nmea_use_case test/unit/test_ingest_nmea_use_case.cpp)
+  target_link_libraries(test_ingest_nmea_use_case ${PROJECT_NAME}_core)
+
+  ament_add_gtest(test_nmea_msg_conversions test/unit/test_nmea_msg_conversions.cpp)
+  target_link_libraries(test_nmea_msg_conversions ${PROJECT_NAME}_ros)
+
+  ament_add_gtest(test_isaacbot_amr_gps_node test/integration/test_isaacbot_amr_gps_node.cpp
+                  TIMEOUT 60)
+  target_link_libraries(test_isaacbot_amr_gps_node ${PROJECT_NAME}_ros)
+
+  # Drives the lifecycle driver node against a real loopback UDP socket.
+  ament_add_gtest(test_isaacbot_amr_gps_driver_node test/integration/test_isaacbot_amr_gps_driver_node.cpp
+                  TIMEOUT 120)
+  target_link_libraries(test_isaacbot_amr_gps_driver_node ${PROJECT_NAME}_ros)
+  target_link_libraries(test_isaacbot_amr_gps_driver_node ${lifecycle_msgs_TARGETS})
+endif()
+
+ament_export_dependencies(${PACKAGE_DEPENDENCIES})
+
+ament_package()
