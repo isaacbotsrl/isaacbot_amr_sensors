@@ -1,6 +1,6 @@
 # isaacbot_amr_sensors_bringup
 
-Starts the Ardennes sensor payload. `rover-a1-sensors` (`rover_docker`) runs it in its
+Starts the Ardennes sensor payload. `ardennes-sensors` (`rover_docker`) runs it in its
 `start.sh`.
 
 ```bash

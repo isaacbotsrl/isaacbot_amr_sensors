@@ -171,7 +171,7 @@ environment variables (see `rover_docker/docker-compose.yml`).
 
 ## Usage
 
-Started by `isaacbot_amr_sensors_bringup` (container `rover-a1-sensors`) when `ISAACBOT_AMR_SYSTEM_USE_LIDAR` is
+Started by `isaacbot_amr_sensors_bringup` (container `ardennes-sensors`) when `ISAACBOT_AMR_SYSTEM_USE_LIDAR` is
 true (default `false`, so isaacbots with no
 lidar fitted are unaffected). Standalone:
 

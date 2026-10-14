@@ -2,7 +2,7 @@
 
 GNSS sensor for the Ardennes payload. The Teltonika RUTX11 router has the GNSS receiver and
 forwards its NMEA sentences over UDP. This package parses that stream into `gps/fix` and reports
-GPS fix health on `diagnostics`. It runs in the `rover-a1-sensors` container.
+GPS fix health on `diagnostics`. It runs in the `ardennes-sensors` container.
 
 The absolute (ENU) heading that GPS localization needs is not computed here: it is localization
 logic and lives in `isaacbot_amr_ros/isaacbot_amr_gps_heading`, which consumes this package's `gps/fix`.

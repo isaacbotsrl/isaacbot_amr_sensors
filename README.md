@@ -7,8 +7,8 @@
 
 # isaacbot_amr_sensors
 
-Mechatronics Academy's Ardennes sensor payload: drivers for the sensors that differ between
-isaacbots and missions, running in their own container (`rover-a1-sensors`).
+IsaacBot's Ardennes sensor payload: drivers for the sensors that differ between
+isaacbots and missions, running in their own container (`ardennes-sensors`).
 
 - [`isaacbot_amr_gps`](isaacbot_amr_gps/README.md) - RUTX11 NMEA-over-UDP GNSS driver (`isaacbot_amr_gps_driver`,
   lifecycle) and GPS fix health diagnostics (`isaacbot_amr_gps_node`).
@@ -28,8 +28,8 @@ lives in `isaacbot_amr_ros/isaacbot_amr_gps_heading`.
 ### Create workspace
 
 ```bash
-mkdir -p ~/ros2_ws/rover_a1
-cd ~/ros2_ws/rover_a1
+mkdir -p ~/ros2_ws/ardennes
+cd ~/ros2_ws/ardennes
 git clone -b master https://github.com/isaacbotsrl/isaacbot_amr_sensors.git src/isaacbot_amr_sensors
 ```
 
@@ -105,9 +105,9 @@ Run node tests one at a time: parallel workers make them flaky under the zenoh m
 A complete isaacbot is three repositories, one per container:
 
 - [`isaacbot_amr_ros`](https://github.com/isaacbotsrl/isaacbot_amr_ros) - the platform
-  (`rover-a1-platform`).
+  (`ardennes-platform`).
 - [`isaacbot_amr_sensors`](https://github.com/isaacbotsrl/isaacbot_amr_sensors) - this one, the sensor
   payload: GNSS, lidar and camera drivers, plus `isaacbot_amr_perception` on top
-  (`rover-a1-sensors`).
+  (`ardennes-sensors`).
 - [`isaacbot_amr_orchestrator`](https://github.com/isaacbotsrl/isaacbot_amr_orchestrator) - the autonomy
-  stack, Nav 2 and mission supervision (`rover-a1-orchestrator`).
+  stack, Nav 2 and mission supervision (`ardennes-orchestrator`).
