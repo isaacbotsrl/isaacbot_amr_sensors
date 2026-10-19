@@ -14,11 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RealSense D435i driver: colour and depth images, and the depth image as a point cloud.
+"""RealSense D435i driver: colour and depth images, the depth image as a laser scan, and
+(optionally) as a point cloud.
 
-Publishes camera/color/image_raw, camera/depth/image_rect_raw and
+Publishes camera/color/image_raw, camera/depth/image_rect_raw, camera/scan and
 (ISAACBOT_AMR_SENSORS_CAMERA_DEPTH_CLOUD) camera/depth/points, which isaacbot_amr_perception (AprilTag, YOLO,
 fmoc person tracking) and Nav 2's local costmap (ISAACBOT_AMR_ORCH_NAV_USE_CAMERA) consume.
+camera/scan lets isaacbot_amr_indoor_nav_manager keep SLAM/AMCL running on the camera alone
+when the lidar is lost.
 
 ISAACBOT_AMR_SENSORS_CAMERA_DEPTH_CLOUD    depth -> PointCloud2 camera/depth/points (default false)
 ISAACBOT_AMR_SENSORS_CAMERA_FPS            colour and depth frame rate: 6, 15 or 30 (default 15)
@@ -108,6 +111,34 @@ def generate_launch_description():
         output='screen',
     )
 
+    # A few depth rows around the optical centre as a LaserScan, in the camera's x-forward
+    # depth frame (not the optical frame). ~87 deg wide; 4 m is where D435 depth stays usable.
+    camera_scan = ComposableNodeContainer(
+        name='camera_scan_container',
+        namespace=namespace,
+        package='rclcpp_components',
+        executable='component_container',
+        composable_node_descriptions=[ComposableNode(
+            package='depthimage_to_laserscan',
+            plugin='depthimage_to_laserscan::DepthImageToLaserScanROS',
+            name='camera_scan',
+            namespace=namespace,
+            remappings=[
+                ('depth', 'camera/depth/image_rect_raw'),
+                ('depth_camera_info', 'camera/depth/camera_info'),
+                ('scan', 'camera/scan'),
+            ],
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'output_frame': [tf_prefix, 'camera_depth_frame'],
+                'range_min': 0.2,
+                'range_max': 4.0,
+                'scan_height': 10,
+            }],
+        )],
+        output='screen',
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             'namespace',
@@ -127,5 +158,6 @@ def generate_launch_description():
                 'ISAACBOT_AMR_SENSORS_CAMERA_DEPTH_PROFILE', default_value='424x240'),
             description='Depth resolution WxH.'),
         realsense,
+        camera_scan,
         depth_cloud,
     ])

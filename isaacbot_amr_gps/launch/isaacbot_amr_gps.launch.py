@@ -74,22 +74,16 @@ def generate_launch_description():
     )
 
     # GPS faults (poor accuracy, no data, data timeout) are only errors when something localizes
-    # on GPS. With the lidar sources (indoor, slam, amcl) the isaacbot is usually indoors, where
-    # tens of metres of error are normal and the GPS may be switched off - reporting that as
-    # ERROR would turn the whole isaacbot red for nothing.
+    # on GPS, and nothing does: isaacbot_amr_indoor_nav_manager localizes on the lidar or the
+    # camera (or odometry). The isaacbot is usually indoors, where tens of metres of error are
+    # normal and the GPS may be switched off - reporting that as ERROR would turn the whole
+    # isaacbot red for nothing.
     gps_required = LaunchConfiguration("gps_required")
     declare_gps_required_arg = DeclareLaunchArgument(
         "gps_required",
-        default_value=PythonExpression(
-            [
-                "'",
-                EnvironmentVariable("ISAACBOT_AMR_ORCH_LOCALIZATION_SOURCE", default_value=""),
-                "'.strip().lower() not in ('indoor', 'slam', 'amcl')",
-            ]
-        ),
+        default_value="false",
         description="Report missing GPS data and poor GNSS accuracy as errors (true) or "
-        "warnings (false). "
-        "Defaults to false when ISAACBOT_AMR_ORCH_LOCALIZATION_SOURCE is indoor, slam or amcl.",
+        "warnings (false, default: nothing localizes on GPS).",
     )
 
     # Lifecycle node, brought straight to active: it owns the UDP socket, so deactivating it

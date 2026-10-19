@@ -1,7 +1,8 @@
 # isaacbot_amr_realsense
 
 Intel RealSense **D435i** driver for Ardennes: `realsense2_camera`, configured for the isaacbot,
-and the depth image as a point cloud (`depth_image_proc`). Moved here from
+the depth image as a point cloud (`depth_image_proc`), and a few depth rows as a `LaserScan`
+(`depthimage_to_laserscan`, `camera/scan`). Moved here from
 `isaacbot_amr_perception_bringup`, so drivers live in `isaacbot_amr_sensors` and perception in
 `isaacbot_amr_perception`.
 
@@ -18,10 +19,15 @@ ros2 launch isaacbot_amr_realsense isaacbot_amr_realsense.launch.py namespace:=i
 | pub | `camera/color/image_raw`, `camera/color/camera_info` | 640x480 |
 | pub | `camera/depth/image_rect_raw`, `camera/depth/camera_info` | `depth_profile` (default 424x240) |
 | pub | `camera/depth/points` | `sensor_msgs/PointCloud2` (only with `use_depth_cloud`) |
+| pub | `camera/scan` | `sensor_msgs/LaserScan`, always: frame `<namespace>/camera_depth_frame`, 0.2–4.0 m, `scan_height` 10 rows |
 | tf  | `<namespace>/camera_link` → `<namespace>/camera_*_optical_frame` | from the driver |
 
-Consumers: `isaacbot_amr_perception` (AprilTag, YOLO detection, fmoc person tracking) and Nav 2's
-local costmap when `ISAACBOT_AMR_ORCH_NAV_USE_CAMERA` is set.
+Consumers: `isaacbot_amr_perception` (AprilTag, YOLO detection, fmoc person tracking), Nav 2's
+local costmap when `ISAACBOT_AMR_ORCH_NAV_USE_CAMERA` is set, and `isaacbot_amr_indoor_nav_manager`
+(isaacbot_amr_orchestrator), which relays `camera/scan` to SLAM/AMCL when the lidar is lost.
+
+`camera/scan` comes from `depthimage_to_laserscan::DepthImageToLaserScanROS` in its own container,
+`camera_scan_container`, fed by `camera/depth/image_rect_raw`.
 
 ## Arguments
 
@@ -31,7 +37,7 @@ local costmap when `ISAACBOT_AMR_ORCH_NAV_USE_CAMERA` is set.
 | `use_depth_cloud` | `$ISAACBOT_AMR_SENSORS_CAMERA_DEPTH_CLOUD`, else `false` | depth → `camera/depth/points` |
 | `camera_fps` | `$ISAACBOT_AMR_SENSORS_CAMERA_FPS`, else `15` | colour and depth rate: 6, 15 or 30 |
 | `depth_profile` | `$ISAACBOT_AMR_SENSORS_CAMERA_DEPTH_PROFILE`, else `424x240` | depth resolution WxH |
-| `use_sim_time` | `false` | for the depth-cloud node |
+| `use_sim_time` | `false` | for the depth-cloud and camera-scan nodes |
 
 ## TF
 
@@ -53,3 +59,4 @@ a separate tree and any TF lookup from the point cloud to `base_link` or `odom` 
 
 Not needed. With `ISAACBOT_AMR_SYSTEM_USE_CAMERA=true` the Gazebo depth camera publishes the same
 `camera/depth/points` (see `isaacbot_amr_description/urdf/common/depth_camera.urdf.xacro`).
+There is no `camera/scan` in Gazebo.

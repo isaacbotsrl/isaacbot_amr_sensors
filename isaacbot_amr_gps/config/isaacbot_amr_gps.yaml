@@ -21,8 +21,8 @@
     fix_timeout_s: 3.0
     warn_horizontal_std_m: 5.0
     error_horizontal_std_m: 20.0
-    # Set by the launch file from ISAACBOT_AMR_ORCH_LOCALIZATION_SOURCE: false for indoor, slam and amcl,
-    # where nothing localizes on GPS, so indoor accuracy (tens of metres) or a GPS that is
-    # switched off (no data / data timeout) is only a warning.
+    # The launch file sets it false (gps_required:=): nothing localizes on GPS, so indoor
+    # accuracy (tens of metres) or a GPS that is switched off (no data / data timeout) is only
+    # a warning.
     gps_required: true
 

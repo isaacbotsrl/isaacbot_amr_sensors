@@ -70,7 +70,7 @@ covariance, which the driver computes from HDOP), rate, age and fix count.
 | `min_rate_ratio` | `0.5` | WARN below `expected_rate_hz * min_rate_ratio`. |
 | `fix_timeout_s` | `3.0` | ERROR (WARN without `gps_required`) when no fix arrives for this long. |
 | `warn_horizontal_std_m` / `error_horizontal_std_m` | `5.0` / `20.0` | Accuracy thresholds [m]. |
-| `gps_required` | `true` | `false` caps the diagnostic at WARN: no data, data timeout and accuracy beyond `error_horizontal_std_m`. The launch file sets it from `ISAACBOT_AMR_ORCH_LOCALIZATION_SOURCE`. |
+| `gps_required` | `true` | `false` caps the diagnostic at WARN: no data, data timeout and accuracy beyond `error_horizontal_std_m`. The launch file sets it to `false` by default. |
 
 All parameters are read-only; invalid values or `warn > error` stop the node at startup.
 
@@ -93,7 +93,7 @@ ros2 launch isaacbot_amr_gps isaacbot_amr_gps.launch.py namespace:=isaacbot
 | `isaacbot_amr_gps_config_path` | `config/isaacbot_amr_gps.yaml` | Parameter file for both nodes. |
 | `common_dir_path` | empty | If set, the default config is read from `<common_dir_path>/isaacbot_amr_gps/config/`. |
 | `log_level` | `INFO` | Logging level. |
-| `gps_required` | `false` if `$ISAACBOT_AMR_ORCH_LOCALIZATION_SOURCE` is `indoor`, `slam` or `amcl`, else `true` | Sets `gps_required`. Nothing localizes on GPS with the lidar sources and the isaacbot is usually indoors, where tens of metres of error are normal and the GPS may be switched off. |
+| `gps_required` | `false` | Sets `gps_required`. Nothing localizes on GPS (Nav 2 uses AMCL, SLAM or odometry) and the isaacbot is usually indoors, where tens of metres of error are normal and the GPS may be switched off. |
 
 `isaacbot_amr_sensors_bringup` starts it when `ISAACBOT_AMR_SYSTEM_USE_GPS` is true (default `false`).
 

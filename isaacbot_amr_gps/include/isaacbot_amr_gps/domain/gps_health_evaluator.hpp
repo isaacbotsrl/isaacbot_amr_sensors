@@ -42,9 +42,9 @@ struct GpsHealthThresholds
     double fix_timeout_s{3.0};
     double warn_horizontal_std_m{5.0};
     double error_horizontal_std_m{20.0};
-    // False when nothing localizes on GPS (indoors: ISAACBOT_AMR_ORCH_LOCALIZATION_SOURCE indoor, slam or
-    // amcl). Poor accuracy or a GPS that is switched off is then not a fault, so neither missing
-    // data nor a timeout nor low accuracy goes beyond WARN.
+    // False when nothing localizes on GPS (the launch default: localization uses the lidar or
+    // camera). Poor accuracy or a GPS that is switched off is then not a fault, so neither
+    // missing data nor a timeout nor low accuracy goes beyond WARN.
     bool gps_required{true};
 };
 
